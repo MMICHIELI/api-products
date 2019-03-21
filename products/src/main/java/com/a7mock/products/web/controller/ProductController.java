@@ -20,8 +20,9 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin( origins = "http://localhost:4200" )
-@Api ( description="REST Microservice of Products for A7 Crud UI.")
+@RequestMapping(value = "/products")
+@CrossOrigin(origins = "http://localhost:4200")
+@Api (description="REST Microservice of Products for A7 Crud UI.")
 public class ProductController {
 
   @Autowired
@@ -31,9 +32,11 @@ public class ProductController {
 
 
   // Product List
-  @GetMapping(value = "/products")
+  @GetMapping
+  @ApiOperation(value = "List all Products", response = Product.class, responseContainer = "List")
   public List<Product> getProducts() {
 
+    LOGGER.info("PRODUCT [CONTROLLER] - GET all Products");
     List<Product> products = productDao.findAll();
 
     if(products.isEmpty()) throw new ProductNotFoundException("No Product !");
@@ -42,18 +45,30 @@ public class ProductController {
   }
 
   // Get Product by id
-  @GetMapping(value = "/products/{id}")
-  public Optional<Product> getById(@PathVariable Long id) {
+  @GetMapping(value = "/{productId}")
+  @ApiOperation(value = "Get a Product by id", response = Product.class, responseContainer = "ResponseEntity")
+  public Optional<Product> getById(
+      @PathVariable("productId") @ApiParam(value = "Product Id", required = true) Long productId
+  ) {
 
-    Optional<Product> product = productDao.findById(id);
+    LOGGER.info("PRODUCT [CONTROLLER] - GET Product by id: " + productId);
+    Optional<Product> product = productDao.findById(productId);
 
-    if(!product.isPresent()) throw new ProductNotFoundException("Product with id " + id + " not found");
+    if(!product.isPresent()) throw new ProductNotFoundException("Product with id " + productId + " not found");
 
     return product;
   }
 
-  @PostMapping(value = "/products", consumes = "application/json")
-  public ResponseEntity<Product> addProduct(@Valid @RequestBody Product product) {
+  @PostMapping(consumes = "application/json")
+  @ApiOperation(value = "Create a new Product", response = Product.class, responseContainer = "ResponseEntity")
+  public ResponseEntity<Product> addProduct(
+      @Valid @RequestBody @ApiParam(value = "Product data", required = true) Product product
+  ) {
+
+    LOGGER.info("PRODUCT [CONTROLLER] - CREATE a new Product = {name: " + product.getProdName()
+        + ", desc: " + product.getProdDesc()
+        + ", price: " + product.getProdPrice() + " }");
+
     Product productAdded = productDao.save(product);
     if (productAdded == null) return ResponseEntity.noContent().build();
 
@@ -66,20 +81,29 @@ public class ProductController {
     return ResponseEntity.created(location).build();
   }
 
-  @PutMapping(value = "/products/{id}", consumes = "application/json")
+  @PutMapping(value = "/{productId}", consumes = "application/json")
   @ApiOperation(value = "Update Product", response = Product.class, responseContainer = "ResponseEntity")
   public ResponseEntity<Product> updateProduit(
-      @Valid @RequestBody @ApiParam(value = "product informations to update", required = true) Product product,
-      @PathVariable("id") @ApiParam(value = "product id", required = true) Long id
+      @Valid @RequestBody @ApiParam(value = "Product data to update", required = true) Product product,
+      @PathVariable("productId") @ApiParam(value = "product id", required = true) Long productId
   ) {
-    LOGGER.info("UPDATE (PUT) an existing product: " + id);
+
+    LOGGER.info("PRODUCT [CONTROLLER] - UPDATE Product by id: " + productId);
+
     Product productUpdated = productDao.save(product);
+
     return new ResponseEntity<>(productUpdated, HttpStatus.OK);
   }
 
-  @DeleteMapping(value = "/products/{id}")
-  public void supprimerProduit(@PathVariable Long id) {
-    productDao.deleteById(id);
+  @DeleteMapping(value = "/{productId}")
+  @ApiOperation(value = "Delete a Product")
+  public void supprimerProduit(
+      @PathVariable("productId") @ApiParam(value = "Id of the Product to Delete", required = true) Long productId
+  ) {
+
+    LOGGER.info("PRODUCT [CONTROLLER] - DELETE Product by id: " + productId);
+
+    productDao.deleteById(productId);
   }
 
 }
