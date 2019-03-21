@@ -22,7 +22,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping(value = "/products")
 @CrossOrigin(origins = "http://localhost:4200")
-@Api (description="REST Microservice of Products for A7 Crud UI.")
+@Api (description="REST Microservice of Products for A7 Crud UI.", value = "/products")
 public class ProductController {
 
   @Autowired
