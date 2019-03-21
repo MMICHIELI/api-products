@@ -1,0 +1,17 @@
+server:
+  port: 9001
+
+spring:
+  banner:
+    location: classpath:/static/rblogo.txt
+
+  #Configurations H2
+  jpa:
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+
+  #défini l'encodage pour data.sql
+  datasource:
+    sql-script-encoding: UTF-8

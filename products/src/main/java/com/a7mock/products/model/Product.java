@@ -13,7 +13,7 @@ public class Product {
 
   @Id
   @GeneratedValue
-  private int id;
+  private Long id;
 
   private String prodDesc;
 
@@ -24,8 +24,7 @@ public class Product {
   public Product() {
   }
 
-  public Product(int id, String prodName, String prodDesc, Double prodPrice) {
-    this.id = id;
+  public Product(String prodName, String prodDesc, Double prodPrice) {
     this.prodName = prodName;
     this.prodDesc = prodDesc;
     this.prodPrice = prodPrice;
