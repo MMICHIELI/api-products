@@ -19,6 +19,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.OK;
+
 @RestController
 @RequestMapping(value = "/products")
 @CrossOrigin(origins = "http://localhost:4200")
@@ -78,7 +81,7 @@ public class ProductController {
         .buildAndExpand(productAdded.getId())
         .toUri();
 
-    return ResponseEntity.created(location).build();
+    return new ResponseEntity<>(productAdded, CREATED);
   }
 
   @PutMapping(value = "/{productId}", consumes = "application/json")
@@ -92,7 +95,7 @@ public class ProductController {
 
     Product productUpdated = productDao.save(product);
 
-    return new ResponseEntity<>(productUpdated, HttpStatus.OK);
+    return new ResponseEntity<>(productUpdated, OK);
   }
 
   @DeleteMapping(value = "/{productId}")
