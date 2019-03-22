@@ -1,6 +1,7 @@
 package com.a7mock.products.web.controller;
 
 import com.a7mock.products.dao.IProductDao;
+import com.a7mock.products.model.GenericResponse;
 import com.a7mock.products.model.Product;
 import com.a7mock.products.web.exception.ProductNotFoundException;
 import io.swagger.annotations.Api;
@@ -36,26 +37,44 @@ public class ProductController {
 
   // Product List
   @GetMapping
-  @ApiOperation(value = "List all Products", response = Product.class, responseContainer = "List")
-  public List<Product> getProducts() {
+  @ApiOperation(value = "List all Products", response = Product.class, responseContainer = "GenericResponse")
+  public GenericResponse<List<Product>> getProducts() {
 
     LOGGER.info("PRODUCT [CONTROLLER] - GET all Products");
-    List<Product> products = productDao.findAll();
 
-    if(products.isEmpty()) throw new ProductNotFoundException("No Product !");
+    GenericResponse<List<Product>> response = new GenericResponse<>();
+    try {
+      List<Product> products = productDao.findAll();
+      response.setData(products);
+    } catch(Exception e) {
+      e.printStackTrace();
+      response.setState("KO");
+      response.setMessage(e.getMessage());
+    }
 
-    return products;
+    if(response.getData().isEmpty())
+      throw new ProductNotFoundException("No Product !");
+
+    return response;
   }
 
   // Get Product by id
   @GetMapping(value = "/{productId}")
   @ApiOperation(value = "Get a Product by id", response = Product.class, responseContainer = "ResponseEntity")
-  public Optional<Product> getById(
+  public GenericResponse<Optional<Product>> getById(
       @PathVariable("productId") @ApiParam(value = "Product Id", required = true) Long productId
   ) {
 
     LOGGER.info("PRODUCT [CONTROLLER] - GET Product by id: " + productId);
-    Optional<Product> product = productDao.findById(productId);
+    GenericResponse<Optional<Product>> response = new GenericResponse<>();
+    try {
+      Optional<Product> product = productDao.findById(productId);
+      response.setData(product);
+    } catch (Exception e) {
+      e.printStackTrace();
+      response.setState("KO");
+      response.setMessage(e.getMessage());
+    }
 
     if(!product.isPresent()) throw new ProductNotFoundException("Product with id " + productId + " not found");
 
@@ -64,7 +83,7 @@ public class ProductController {
 
   @PostMapping(consumes = "application/json")
   @ApiOperation(value = "Create a new Product", response = Product.class, responseContainer = "ResponseEntity")
-  public ResponseEntity<Product> addProduct(
+  public GenericResponse<Product> addProduct(
       @Valid @RequestBody @ApiParam(value = "Product data", required = true) Product product
   ) {
 
@@ -72,14 +91,16 @@ public class ProductController {
         + ", desc: " + product.getProdDesc()
         + ", price: " + product.getProdPrice() + " }");
 
-    Product productAdded = productDao.save(product);
+    GenericResponse<Product> response = new GenericResponse<>();
+
+    try {
+      Product productAdded = productDao.save(product);
+      response.setData(productAdded);
+    }
+
+
     if (productAdded == null) return ResponseEntity.noContent().build();
 
-    URI location = ServletUriComponentsBuilder
-        .fromCurrentRequest()
-        .path("/{id]")
-        .buildAndExpand(productAdded.getId())
-        .toUri();
 
     return new ResponseEntity<>(productAdded, CREATED);
   }
