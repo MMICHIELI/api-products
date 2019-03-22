@@ -10,17 +10,14 @@ import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.OK;
 
 @RestController
@@ -37,7 +34,7 @@ public class ProductController {
 
   // Product List
   @GetMapping
-  @ApiOperation(value = "List all Products", response = Product.class, responseContainer = "GenericResponse")
+  @ApiOperation(value = "List all Products")
   public GenericResponse<List<Product>> getProducts() {
 
     LOGGER.info("PRODUCT [CONTROLLER] - GET all Products");
@@ -48,7 +45,7 @@ public class ProductController {
       response.setData(products);
     } catch(Exception e) {
       e.printStackTrace();
-      response.setState("KO");
+      response.setStatus("KO");
       response.setMessage(e.getMessage());
     }
 
@@ -60,29 +57,31 @@ public class ProductController {
 
   // Get Product by id
   @GetMapping(value = "/{productId}")
-  @ApiOperation(value = "Get a Product by id", response = Product.class, responseContainer = "ResponseEntity")
+  @ApiOperation(value = "Get a Product by id")
   public GenericResponse<Optional<Product>> getById(
       @PathVariable("productId") @ApiParam(value = "Product Id", required = true) Long productId
   ) {
 
     LOGGER.info("PRODUCT [CONTROLLER] - GET Product by id: " + productId);
+
     GenericResponse<Optional<Product>> response = new GenericResponse<>();
     try {
       Optional<Product> product = productDao.findById(productId);
       response.setData(product);
     } catch (Exception e) {
       e.printStackTrace();
-      response.setState("KO");
+      response.setStatus("KO");
       response.setMessage(e.getMessage());
     }
 
-    if(!product.isPresent()) throw new ProductNotFoundException("Product with id " + productId + " not found");
+    if(!response.getData().isPresent())
+      throw new ProductNotFoundException("Product with id " + productId + " not found");
 
-    return product;
+    return response;
   }
 
   @PostMapping(consumes = "application/json")
-  @ApiOperation(value = "Create a new Product", response = Product.class, responseContainer = "ResponseEntity")
+  @ApiOperation(value = "Create a new Product")
   public GenericResponse<Product> addProduct(
       @Valid @RequestBody @ApiParam(value = "Product data", required = true) Product product
   ) {
@@ -91,43 +90,64 @@ public class ProductController {
         + ", desc: " + product.getProdDesc()
         + ", price: " + product.getProdPrice() + " }");
 
-    GenericResponse<Product> response = new GenericResponse<>();
-
+    GenericResponse<Product> response = new GenericResponse<>(CREATED.toString());
     try {
       Product productAdded = productDao.save(product);
       response.setData(productAdded);
+    } catch (Exception e) {
+      e.printStackTrace();
+      response.setStatus(NO_CONTENT.toString());
+      response.setMessage(e.getMessage());
     }
 
 
-    if (productAdded == null) return ResponseEntity.noContent().build();
+    if (response.getData() == null)
+      response.setStatus(NO_CONTENT.toString());
 
 
-    return new ResponseEntity<>(productAdded, CREATED);
+    return response;
   }
 
   @PutMapping(value = "/{productId}", consumes = "application/json")
-  @ApiOperation(value = "Update Product", response = Product.class, responseContainer = "ResponseEntity")
-  public ResponseEntity<Product> updateProduit(
+  @ApiOperation(value = "Update Product")
+  public GenericResponse<Product> updateProduct(
       @Valid @RequestBody @ApiParam(value = "Product data to update", required = true) Product product,
       @PathVariable("productId") @ApiParam(value = "product id", required = true) Long productId
   ) {
 
     LOGGER.info("PRODUCT [CONTROLLER] - UPDATE Product by id: " + productId);
 
-    Product productUpdated = productDao.save(product);
+    GenericResponse<Product> response = new GenericResponse<>();
+    try {
+      Product productUpdated = productDao.save(product);
+      response.setData(productUpdated);
+    } catch (Exception e) {
+      response.setStatus(NO_CONTENT.toString());
+      response.setMessage(e.getMessage());
+    }
 
-    return new ResponseEntity<>(productUpdated, OK);
+    if (response.getData() == null)
+      response.setStatus(NO_CONTENT.toString());
+
+    return response;
   }
 
   @DeleteMapping(value = "/{productId}")
-  @ApiOperation(value = "Delete a Product")
-  public void supprimerProduit(
+  @ApiOperation(value = "Delete a Product", response = GenericResponse.class)
+  public GenericResponse<Product> supprimerProduct(
       @PathVariable("productId") @ApiParam(value = "Id of the Product to Delete", required = true) Long productId
   ) {
 
     LOGGER.info("PRODUCT [CONTROLLER] - DELETE Product by id: " + productId);
 
-    productDao.deleteById(productId);
-  }
+    GenericResponse<Product> response = new GenericResponse<>();
+    try {
+      productDao.deleteById(productId);
+    } catch (Exception e) {
+      response.setStatus("KO");
+      response.setMessage(e.getMessage());
+    }
 
+    return response;
+  }
 }
