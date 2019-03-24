@@ -10,15 +10,16 @@ import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.List;
 import java.util.Optional;
 
-import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
 
 @RestController
 @RequestMapping(value = "/products")
@@ -35,21 +36,29 @@ public class ProductController {
   // Product List
   @GetMapping
   @ApiOperation(value = "List all Products")
-  public GenericResponse<List<Product>> getProducts() {
+  public GenericResponse<Page<Product>> getProducts(
+      @RequestParam(value = "size", defaultValue = "10") final int size,
+      @RequestParam(value = "page", defaultValue = "0") final int page,
+      @RequestParam(value = "sortProperty", defaultValue = "id") final String sortProperty,
+      @RequestParam(value = "sortDirection", defaultValue = "asc") final String sortDirection
+  ) {
 
     LOGGER.info("PRODUCT [CONTROLLER] - GET all Products");
 
-    GenericResponse<List<Product>> response = new GenericResponse<>();
+    GenericResponse<Page<Product>> response = new GenericResponse<>();
+    Sort.Order order = new Sort.Order(Sort.Direction.fromString(sortDirection), sortProperty);
+    Pageable pageable = PageRequest.of(page, size, Sort.by(order));
+
     try {
-      List<Product> products = productDao.findAll();
+      Page<Product> products = productDao.findAll(pageable);
       response.setData(products);
     } catch(Exception e) {
       e.printStackTrace();
-      response.setStatus("KO");
+      response.setStatus(INTERNAL_SERVER_ERROR.toString());
       response.setMessage(e.getMessage());
     }
 
-    if(response.getData().isEmpty())
+    if(response.getData().getContent().isEmpty())
       throw new ProductNotFoundException("No Product !");
 
     return response;
